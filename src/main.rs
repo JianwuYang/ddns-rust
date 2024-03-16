@@ -1,4 +1,6 @@
 use anyhow::{anyhow, Result};
+use tracing::{Level, info};
+use tracing_subscriber::FmtSubscriber;
 use utils::{file_utils, tencent_utils::TencentUtils};
 
 #[macro_use]
@@ -8,11 +10,24 @@ mod entity;
 mod utils;
 
 fn main() {
-    let origin_config = file_utils::load_config().unwrap();
+
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    let mut origin_config = file_utils::load_config().unwrap();
 
     let ddns_config = origin_config.clone();
 
-    let ip = check_cache(ddns_config.force_update).unwrap();
+    let ip = match check_cache(ddns_config.force_update) {
+        Ok(ip) => ip,
+        Err(e) => {
+            info!("{}", e);
+            return;
+        }
+    };
 
     let tencent_util = TencentUtils::new(ddns_config.secret_id, ddns_config.secret_key);
 
@@ -33,11 +48,16 @@ fn main() {
                     tencent_util
                         .update_record(&ddns_config.domain, &item.name, &ip, item.record_id)
                         .unwrap();
+                    info!("Update record: {} to {}", item.name, ip);
+                }
+                else {
+                    info!("Skip update record: {} to {}", item.name, ip);
                 }
             } else {
                 tencent_util
                     .delete_record(&ddns_config.domain, item.record_id)
                     .unwrap();
+                info!("Delete record: {}", item.name);
             }
         }
     });
@@ -47,10 +67,13 @@ fn main() {
             tencent_util
                 .create_record(&ddns_config.domain, sub_domain, &ip)
                 .unwrap();
+            info!("Create record: {} to {}", sub_domain, ip);
         }
     });
 
     file_utils::save_cache(&ip).unwrap();
+
+    origin_config.force_update = false;
 
     file_utils::save_config(&origin_config).unwrap();
 }
@@ -60,9 +83,10 @@ fn check_cache(force_update: bool) -> Result<String> {
 
     let ip = utils::ip_utils::get_ip()?;
 
-    if force_update || (ip == cache) {
+    if force_update || (ip != cache) {
         Ok(ip)
-    } else {
+    }
+    else {
         Err(anyhow!("SKIP: Cache IP not changed, skip update"))
     }
 }

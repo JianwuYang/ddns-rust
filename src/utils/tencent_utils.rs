@@ -44,7 +44,7 @@ impl TencentUtils {
     pub fn create_record(&self, domain: &str, sub_domain: &str, value: &str) -> Result<()> {
         let action = "CreateRecord";
         let body = format!(
-            r#"{{"Domain": "{}", "SubDomain": "{}", "RecordType": "A", "RecordLine": "默认", "Value": "{}"}}"#,
+            r#"{{"Domain": "{}", "SubDomain": "{}", "RecordType": "A", "RecordLine": "默认", "Value": "{}", "Remark": "ddns"}}"#,
             domain, sub_domain, value
         );
         do_request(action, &body, &self.secret_key, &self.secret_id)?;
