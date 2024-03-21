@@ -27,7 +27,7 @@ impl TencentUtils {
     ) -> Result<()> {
         let action = "ModifyRecord";
         let body = format!(
-            r#"{{"Domain": "{}", "SubDomain": "{}", "RecordType": "A", "RecordLine": "默认", "Value": "{}", "RecordId": "{}", "Remark": "ddns"}}"#,
+            r#"{{"Domain": "{}", "SubDomain": "{}", "RecordType": "A", "RecordLine": "默认", "Value": "{}", "RecordId": {}, "Remark": "ddns"}}"#,
             domain, sub_domain, value, record_id
         );
         do_request(action, &body, &self.secret_key, &self.secret_id)?;
@@ -36,7 +36,7 @@ impl TencentUtils {
 
     pub fn delete_record(&self, domain: &str, record_id: i64) -> Result<()> {
         let action = "DeleteRecord";
-        let body = format!(r#"{{"Domain": "{}", "RecordId": "{}"}}"#, domain, record_id);
+        let body = format!(r#"{{"Domain": "{}", "RecordId": {}}}"#, domain, record_id);
         do_request(action, &body, &self.secret_key, &self.secret_id)?;
         Ok(())
     }
